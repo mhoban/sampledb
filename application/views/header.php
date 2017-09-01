@@ -2,7 +2,6 @@
 function print_header($url,$name,$page)
 {
   global $method,$class;
-  /*#<a href='<?php echo site_url('samples/station')?>'>Stations</a> | */
   if ($method == $page) echo "[";
   echo "<a href=\"$url\">$name</a>";
   if ($method == $page) echo "]";

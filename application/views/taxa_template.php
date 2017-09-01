@@ -1,11 +1,8 @@
-<link type="text/css" rel="stylesheet" href="/sampledb/assets/grocery_crud/css/jquery_plugins/chosen/chosen.css">
-<link type="text/css" rel="stylesheet" href="/sampledb/assets/grocery_crud/css/ui/simple/jquery-ui-1.10.1.custom.min.css">
-<script src="/sampledb/assets/grocery_crud/js/jquery_plugins/jquery.chosen.min.js"></script>
-<script src="/sampledb/assets/grocery_crud/js/jquery_plugins/config/jquery.chosen.config.js"></script>
-<script src="/sampledb/assets/grocery_crud/js/jquery_plugins/ui/jquery-ui-1.10.3.custom.min.js"></script>
-<div id="worms_dlg" title="Load species information" style="display:none">
-Scientific name begins with: <input id="spp_search" type="text" size="20">
-</div>
+<link type="text/css" rel="stylesheet" href="<?php echo base_url('assets/grocery_crud/css/jquery_plugins/chosen/chosen.css'); ?>">
+<link type="text/css" rel="stylesheet" href="<?php echo base_url('assets/grocery_crud/css/ui/simple/jquery-ui-1.10.1.custom.min.css'); ?>">
+<script src="<?php echo base_url('assets/grocery_crud/js/jquery_plugins/jquery.chosen.min.js'); ?>"></script>
+<script src="<?php echo base_url('assets/grocery_crud/js/jquery_plugins/config/jquery.chosen.config.js'); ?>"></script>
+<script src="<?php echo base_url('assets/grocery_crud/js/jquery_plugins/ui/jquery-ui-1.10.3.custom.min.js'); ?>"></script>
 <script>
 var delay_timer=false;
 function taxonChange(e)
@@ -17,7 +14,7 @@ function taxonChange(e)
     }
     delay_timer = setTimeout(function() {
       if (!/^\s/.test(srch)) {
-        srch = srch.trim();
+        srch = encodeURI(srch.trim());
         $("#img-loader").show();
         $.getJSON("http://www.marinespecies.org/rest/AphiaRecordsByName/" + srch + "?like=true&marine_only=true", function(data) {
           $("#img-loader").hide();
@@ -39,16 +36,21 @@ function taxonChange(e)
   }
 }
 $(function() {
-  console.log("hello");
   var response_cache = {};
   var response_data = {};
   if ($("#field-worms_id").is('select'))
     $("#field-worms_id").chosen();
-  $("#field-worms_id").after('<img src=/sampledb/assets/ajax-loader.gif style="display: none" id="img-loader"/>');
+  //$("#worms_id_input_box").after($('<img src="<?php echo base_url('assets/ajax-loader.gif'); ?>" style="display: none" id="img-loader"/>'));
+  $("#worms_id_input_box").after($('<img>',
+    {
+      'id': 'img-loader',
+      'src': "<?php echo base_url('assets/ajax-loader.gif'); ?>",
+      'style': 'display: none'
+    }
+  ));
   $("#field-genus").keyup(taxonChange);
   $("#field-species").keyup(taxonChange);
   $(".get-worms-id").click(function(e) {
-    console.log("clicked");
     e.preventDefault();
   });
   $("#field-worms_id").change(function() {
@@ -56,6 +58,9 @@ $(function() {
     if (s.length > 1) {
       if ($("#field-genus").val() != s[0]) $("#field-genus").val(s[0]);
       if ($("#field-species").val() != s[1]) $("#field-species").val(s[1]);
+    } else {
+      if ($("#field-genus").val() != s[0]) $("#field-genus").val(s[0]);
+      $("#field-species").val('spp.');
     }
   });
 });
