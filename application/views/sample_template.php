@@ -14,15 +14,10 @@ $(function() {
     makePrefix($("#field-taxon_id option:selected").text());
   });
   $("#field-sample_prefix").change(function(event,ui) {
-    $.getJSON("/sampledb/samples/sample_number",{"prefix":$("#field-sample_prefix").val()},function(data) {
+    $.getJSON("<? echo site_url('samples/sample_number'); ?>",{"prefix":$("#field-sample_prefix").val()},function(data) {
       $("#field-sample_number").val(parseInt(data['max_sample'])+1);
     });
   });
-  //$("#field-taxon_id").change(function(event,ui) {
-    //$.getJSON("/sampledb/samples/mlh_number",function(data) {
-      //$("#field-mlh_number").val(parseInt(data['mlh_number'])+1);
-    //});
-  //});
 });
 </script>
 
