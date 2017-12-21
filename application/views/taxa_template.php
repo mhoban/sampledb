@@ -60,7 +60,7 @@ $(function() {
       if ($("#field-species").val() != s[1]) $("#field-species").val(s[1]);
     } else {
       if ($("#field-genus").val() != s[0]) $("#field-genus").val(s[0]);
-      $("#field-species").val('spp.');
+      $("#field-species").val('sp.');
     }
   });
 });
