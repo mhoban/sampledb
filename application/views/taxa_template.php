@@ -62,6 +62,21 @@ $(function() {
       if ($("#field-genus").val() != s[0]) $("#field-genus").val(s[0]);
       $("#field-species").val('sp.');
     }
+    var wid = $("#field-worms_id option:selected").val();
+    if ($("#worms-popup").length == 0)
+    {
+      $("#worms_id_input_box").append($('<a>',
+        {
+          'id': 'worms-popup',
+          'href': "http://marinespecies.org/aphia.php?p=taxdetails&id="+wid,
+          'target': '_blank',
+          'title': 'Open WORMS page in new tab/window'
+        }).text('[?]')
+      );
+    }
+    else {
+      $("#worms-popup").attr('href',"http://marinespecies.org/aphia.php?p=taxdetails&id="+wid);
+    }
   });
 });
 </script>
