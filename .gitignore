@@ -5,7 +5,6 @@
 .project
 .tern-project
 .idea/
-f.html
 application/logs/
 application/cache/
 bootstrap-v4
