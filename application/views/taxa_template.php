@@ -1,8 +1,10 @@
+<?php if (!$add_dialog):?>
 <link type="text/css" rel="stylesheet" href="<?php echo base_url('assets/grocery_crud/css/jquery_plugins/chosen/chosen.css'); ?>">
 <link type="text/css" rel="stylesheet" href="<?php echo base_url('assets/grocery_crud/css/ui/simple/jquery-ui-1.10.1.custom.min.css'); ?>">
 <script src="<?php echo base_url('assets/grocery_crud/js/jquery_plugins/jquery.chosen.min.js'); ?>"></script>
 <script src="<?php echo base_url('assets/grocery_crud/js/jquery_plugins/config/jquery.chosen.config.js'); ?>"></script>
 <script src="<?php echo base_url('assets/grocery_crud/js/jquery_plugins/ui/jquery-ui-1.10.3.custom.min.js'); ?>"></script>
+<?php endif; ?>
 <script>
 var delay_timer=false;
 function taxonChange(e)
@@ -80,8 +82,6 @@ $(function() {
   });
 });
 </script>
-
-<div style='height:20px;'></div>  
 <div>
 <?php echo $output; ?>
 </div>

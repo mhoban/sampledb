@@ -1,0 +1,29 @@
+tr.field_error
+{
+	border: 1px solid red !important;	
+}
+
+.obs_table
+{
+  border-collapse: collapse;
+}
+
+/*#save-and-go-back-button {*/
+  /*display: none;*/
+/*}*/
+
+#top {
+  width:100%; 
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
+#bottom {
+  width: 100%; 
+  padding: 10px;
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
