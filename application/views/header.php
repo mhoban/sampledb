@@ -51,6 +51,9 @@ a:hover
   <?php print_header(site_url('samples/taxa'),'Taxa','taxa'); ?> |
   <?php print_header(site_url('samples/sample'),'Samples','sample'); ?> |
   <?php print_header(site_url('samples/multi_sample/add'),'Add multiple samples','multi_sample'); ?> |
+  <?php print_header(site_url('samples/edna'),'eDNA','edna'); ?> |
+  <?php print_header(site_url('samples/multi_edna/add'),'Add multiple eDNA samples','multi_edna'); ?> |
+  <?php print_header(site_url('samples/substrate'),'eDNA Substrate','substrate'); ?> |
   <?php print_header(site_url('samples/benthic_obs'),'Benthic observations','benthic_obs'); ?>
   </div>
 <div class="headsep" style='height:20px;'></div>  

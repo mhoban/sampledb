@@ -8,9 +8,10 @@ tr.field_error
   border-collapse: collapse;
 }
 
-/*#save-and-go-back-button {*/
-  /*display: none;*/
-/*}*/
+.fc_table
+{
+  display: none;
+}
 
 #top {
   width:100%; 
