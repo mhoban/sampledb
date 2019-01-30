@@ -2,8 +2,7 @@
 	$this->set_css($this->default_theme_path.'/flexigrid/css/flexigrid.css');
 	$this->set_js_lib($this->default_javascript_path.'/'.grocery_CRUD::JQUERY);
 
-  //MH HACK
-	if ($dialog_forms || true) {
+	if ($dialog_forms) {
         $this->set_js_lib($this->default_javascript_path.'/jquery_plugins/jquery.noty.js');
         $this->set_js_lib($this->default_javascript_path.'/jquery_plugins/config/jquery.noty.config.js');
         $this->set_js_lib($this->default_javascript_path.'/common/lazyload-min.js');
@@ -18,11 +17,6 @@
 
 	$this->set_js($this->default_javascript_path.'/jquery_plugins/jquery.numeric.min.js');
 	$this->set_js($this->default_theme_path.'/flexigrid/js/jquery.printElement.min.js');
-
-	/** Fancybox */
-	$this->set_css($this->default_css_path.'/jquery_plugins/fancybox/jquery.fancybox.css');
-	$this->set_js($this->default_javascript_path.'/jquery_plugins/jquery.fancybox-1.3.4.js');
-	$this->set_js($this->default_javascript_path.'/jquery_plugins/jquery.easing-1.3.pack.js');
 
 	/** Jquery UI */
 	$this->load_js_jqueryui();
