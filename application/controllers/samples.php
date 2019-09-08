@@ -279,7 +279,7 @@ class Samples extends CI_Controller {
     } else {
       $config = array(
         'zoom' => 'auto',
-        'apiKey' => "AIzaSyDWJ23Tdap-vRO1PcJnlN59X80CaO49YHA"
+        'apiKey' => ""
       );
       $this->load->library("googlemaps",$config);
       //$config['zoom'] = 'auto';
