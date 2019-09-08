@@ -134,6 +134,7 @@ class Samples extends CI_Controller {
     $prefix = $data['sample_prefix'];
     $sample_number = $data['number_start'];
     $to_add = $data['number_added'];
+    $base_notes = $data['notes'];
     unset($data['collectors']);
     unset($data['sample_prefix']);
     unset($data['number_start']);
@@ -143,6 +144,8 @@ class Samples extends CI_Controller {
     for ($i=0; $i < $to_add; $i++) {
       $data['edna_number'] = sprintf("%s%03d",$prefix,$sample_number+$i);
       $data['notes'] = sprintf('%d/%d',$i+1,$to_add);
+      if (strlen($base_notes) > 0)
+        $data['notes'] .= " - " . $base_notes;
       $res = $this->db->insert('edna',$data);
       if ($res) {
         $id = $this->db->insert_id();
@@ -236,30 +239,68 @@ class Samples extends CI_Controller {
     }
   }
 
-  function station_map()
+  function islands()
   {
-    $config = array(
-      'zoom' => 'auto',
-      'apiKey' => "<GOOGLE API KEY>"
-    );
-    $this->load->library("googlemaps",$config);
-    //$config['zoom'] = 'auto';
-    //$this->googlemaps->initialize($config);
+    $this->db->distinct();
+    $this->db->select("island as `id`, island as `name`");
+    $this->db->from("station");
+    $islands = $this->db->get()->result_object();
+    $this->output->set_output(json_encode($islands));
+    
+  }
 
-    $this->db->select("station_name,lat,lon,notes");
-    $qry = $this->db->get("station");
-    foreach ($qry->result() as $row) {
-      $marker = array();
-      $marker["position"] = $row->lat . ',' . $row->lon;
-      //$marker["infowindow_content"] = html_escape($row->notes);
-      $marker["title"] = $row->station_name;
-      $this->googlemaps->add_marker($marker);
+  function countries()
+  {
+    $this->db->distinct();
+    $this->db->select("country as `id`, country as `name`");
+    $this->db->from("station");
+    $countries = $this->db->get()->result_object();
+    $this->output->set_output(json_encode($countries));
+  }
+
+  function station_map($task=null)
+  {
+    if ($task == "filter") {
+      $filter = $this->input->get('filter');
+      $grouping = $this->input->get('grouping');
+      $island = $this->input->get('island');
+      $country = $this->input->get('country');
+      $this->db->select("station_name,lat,lon,notes");
+      if ($filter && strlen($filter) > 0)
+        $this->db->like("station_name",$filter);
+      if ($grouping && $grouping > 0)
+        $this->db->where("grouping",$grouping);
+      if ($island && strlen($island) > 0)
+        $this->db->where("island",$island);
+      if ($country && strlen($country) > 0)
+        $this->db->where("country",$country);
+      $stations = $this->db->get("station")->result_object();
+      $this->output->set_output(json_encode($stations));
+    } else {
+      $config = array(
+        'zoom' => 'auto',
+        'apiKey' => "AIzaSyDWJ23Tdap-vRO1PcJnlN59X80CaO49YHA"
+      );
+      $this->load->library("googlemaps",$config);
+      //$config['zoom'] = 'auto';
+      //$this->googlemaps->initialize($config);
+
+      $this->db->select("station_name,lat,lon,notes");
+      $qry = $this->db->get("station");
+      foreach ($qry->result() as $row) {
+        $marker = array();
+        $marker["position"] = $row->lat . ',' . $row->lon;
+        //$marker["infowindow_content"] = html_escape($row->notes);
+        $marker["title"] = $row->station_name;
+        $this->googlemaps->add_marker($marker);
+      }
+
+      $output = array();
+      $output['map'] = $this->googlemaps->create_map();
+
+      $this->_render_output("station_map",$output);
+
     }
-
-    $output = array();
-    $output['map'] = $this->googlemaps->create_map();
-
-    $this->_render_output("station_map",$output);
   }
 
   function edna_number($prefix=null)
@@ -321,14 +362,22 @@ class Samples extends CI_Controller {
     $this->_render_output("station_template",$output);
   }
 
-  public function grouping()
+  public function grouping($task=null)
   {
-    $crud = new grocery_CRUD();
-    $crud->set_subject("Groupings")
-      ->set_table("grouping");
-    $output = $crud->render();//$this->grocery_crud->render();
+    if ($task == "json") {
+      $this->db->select("grouping_id as `id`,grouping_name as `name`");
+      $this->db->from("grouping");
+      $groupings = $this->db->get()->result_object();
+      $this->output->set_output(json_encode($groupings));
 
-    $this->_render_output("generic_template",$output);
+    } else {
+      $crud = new grocery_CRUD();
+      $crud->set_subject("Groupings")
+           ->set_table("grouping");
+      $output = $crud->render();//$this->grocery_crud->render();
+
+      $this->_render_output("generic_template",$output);
+    }
   }
 
   public function protection_status()
@@ -429,7 +478,7 @@ class Samples extends CI_Controller {
       $crud = new grocery_CRUD();
       $crud->set_subject("eDNA Samples")
          ->set_table("edna")
-         ->add_fields("station_id","substrate_id","method_id","substrate_volume","collection_date","box_number","collectors","sample_prefix","number_start","number_added")
+         ->add_fields("station_id","substrate_id","method_id","substrate_volume","collection_date","box_number","collectors","sample_prefix","number_start","number_added","notes")
          ->callback_add_field('number_start',function() {
            return '<input id="field-number_start" class="form-control" name="number_start" type="text" value="' . ($this->_max_edna('SGP')+1) . '">';
            //return '<input type="text" class="form-control" name="mlh_number" id="field-mlh_number" value="' . ($this->_max_mlh()+1) . '">';
@@ -448,6 +497,8 @@ class Samples extends CI_Controller {
          ->display_as('number_start','Starting sample number')
          ->display_as("number_added","Number of samples to add")
          ->display_as("substrate_volume","Substrate volume (L)")
+         ->display_as("notes","Notes")
+         ->unset_texteditor("notes")
          ->callback_insert(array($this,'_insert_multiple_edna'));
       $output = $crud->render();//$this->grocery_crud->render();
 
