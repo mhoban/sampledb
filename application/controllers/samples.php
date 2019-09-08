@@ -9,7 +9,7 @@ class Samples extends CI_Controller {
 		$this->load->database();
     $this->load->helper("url");
     $this->load->library("grocery_CRUD");
-
+    $this->config->load("sampledb");
 	}
 
   function _render_output($template,$output=null,$content_only=false)
@@ -279,7 +279,7 @@ class Samples extends CI_Controller {
     } else {
       $config = array(
         'zoom' => 'auto',
-        'apiKey' => ""
+        'apiKey' => $this->config->item('sampledb_google_api_key')
       );
       $this->load->library("googlemaps",$config);
       //$config['zoom'] = 'auto';
