@@ -277,14 +277,15 @@ class Samples extends CI_Controller {
       $stations = $this->db->get("station")->result_object();
       $this->output->set_output(json_encode($stations));
     } else {
-      $config = array(
-        'zoom' => "auto",
-        'apiKey' => $this->config->item('sampledb_google_api_key')
-      );
-      $this->load->library("googlemaps",$config);
+      //$config = array(
+        //'zoom' => "auto",
+        //'apiKey' => $this->config->item('sampledb_google_api_key')
+      //);
+			//$this->load->library("googlemaps",$config);
 
       $output = array();
-      $output['map'] = $this->googlemaps->create_map();
+			$output['apiKey'] = $this->config->item('sampledb_google_api_key');
+			//$output['map'] = $this->googlemaps->create_map();
 
       $this->_render_output("station_map_template",$output);
 
