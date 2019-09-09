@@ -3,6 +3,7 @@ var base_url = '<?php echo base_url(); ?>';
 </script>
 <link type="text/css" rel="stylesheet" href="http://localhost:8888/sampledb/assets/grocery_crud/css/jquery_plugins/chosen/chosen.css" />
 <script src="assets/grocery_crud/js/jquery-1.11.1.min.js"></script>
+<script src="assets/js/js.cookie.js"></script>
 <script src="assets/grocery_crud/js/jquery_plugins/jquery.chosen.min.js"></script>
 <script src="assets/grocery_crud/js/jquery_plugins/config/jquery.chosen.config.js"></script>
 
@@ -31,21 +32,36 @@ function deleteMarkers()
   lat_longs_map = [];
 }
 
-function filterMap()
+function showSamples(station_id)
 {
-  var text_filter = $("#station_filter").val();
-  var grouping_filter = $("#grouping").val();
-  var island_filter = $("#islands").val();
-  var country_filter = $("#countries").val();
-  //console.log("text: " + text_filter);
-  //console.log("grouping: " + grouping_filter);
-  //console.log("island: " + island_filter);
-  //console.log("country: " + country_filter);
+  window.location.href = base_url + "samples/edna?station_filter=" + encodeURI(station_id);
+}
+
+function filterMap(filter=null)
+{
+  if (!filter || filter == null) {
+    filter = {
+      text_filter: $("#station_filter").val(),
+      grouping_filter: $("#grouping").val(),
+      island_filter: $("#islands").val(),
+      country_filter: $("#countries").val()
+    };
+  } else {
+    $("#station_filter").val(filter.text_filter);
+    $("#grouping").val(filter.grouping_filter).trigger("chosen:updated");
+    $("#islands").val(filter.island_filter).trigger("chosen:updated");
+    $("#countries").val(filter.country_filter).trigger("chosen:updated");
+  }
+  Cookies.set("station_map_filter",filter);
+  //var text_filter = $("#station_filter").val();
+  //var grouping_filter = $("#grouping").val();
+  //var island_filter = $("#islands").val();
+  //var country_filter = $("#countries").val();
   $.getJSON(base_url + "samples/station_map/filter",{
-    "filter": text_filter,
-    "grouping": grouping_filter,
-    "island": island_filter,
-    "country": country_filter
+    "filter": filter.text_filter,
+    "grouping": filter.grouping_filter,
+    "island": filter.island_filter,
+    "country": filter.country_filter
   }, function(data) {
     deleteMarkers();
     data.map(function(e,i,a) {
@@ -53,9 +69,13 @@ function filterMap()
       var marker_options = {
         map: map,
         position: point,
-        title: e.station_name
+        title: e.station_name,
+        station_id: e.station_id
       };
-      createMarker_map(marker_options);
+      var m = createMarker_map(marker_options);
+      m.addListener("click",function(e) {
+        showSamples(this.title);
+      });
     });
     fitMapToBounds_map();
   });
@@ -91,9 +111,25 @@ function setup()
       e.preventDefault();
     }
   });
+  $("#clearfilter").click(function() {
+    filterMap({
+      text_filter: "",
+      grouping_filter: "",
+      island_filter: "",
+      country_filter: "" 
+    });
+  });
+  // make these things load synchronously so when we filter the map the dropdowns will have content
+  $.ajaxSetup({async: false});
   updateSelect("#grouping");
   updateSelect("#islands");
   updateSelect("#countries");
+  $.ajaxSetup({async: true});
+  // something weird about the load order of different components allow the below hack to make things work
+  //setTimeout(function() { 
+    filter = Cookies.getJSON("station_map_filter");
+    filterMap(filter); 
+  //},0);
 }
 
 $(function() {
@@ -106,6 +142,7 @@ Station name: <input id="station_filter" type="text"> |
 Station grouping: <select id="grouping"></select> | 
 Island: <select id="islands"></select> |
 Country: <select id="countries"></select>
+<input type="button" id="clearfilter" value="Clear filters">
 </div>
 <div id="bottom">
 <?php echo $map['js']; ?>

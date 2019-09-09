@@ -265,7 +265,7 @@ class Samples extends CI_Controller {
       $grouping = $this->input->get('grouping');
       $island = $this->input->get('island');
       $country = $this->input->get('country');
-      $this->db->select("station_name,lat,lon,notes");
+      $this->db->select("station_id,station_name,lat,lon,notes");
       if ($filter && strlen($filter) > 0)
         $this->db->like("station_name",$filter);
       if ($grouping && $grouping > 0)
@@ -278,27 +278,15 @@ class Samples extends CI_Controller {
       $this->output->set_output(json_encode($stations));
     } else {
       $config = array(
-        'zoom' => 'auto',
+        'zoom' => "auto",
         'apiKey' => $this->config->item('sampledb_google_api_key')
       );
       $this->load->library("googlemaps",$config);
-      //$config['zoom'] = 'auto';
-      //$this->googlemaps->initialize($config);
-
-      $this->db->select("station_name,lat,lon,notes");
-      $qry = $this->db->get("station");
-      foreach ($qry->result() as $row) {
-        $marker = array();
-        $marker["position"] = $row->lat . ',' . $row->lon;
-        //$marker["infowindow_content"] = html_escape($row->notes);
-        $marker["title"] = $row->station_name;
-        $this->googlemaps->add_marker($marker);
-      }
 
       $output = array();
       $output['map'] = $this->googlemaps->create_map();
 
-      $this->_render_output("station_map",$output);
+      $this->_render_output("station_map_template",$output);
 
     }
   }
@@ -452,6 +440,7 @@ class Samples extends CI_Controller {
 
   public function edna($task=null)
   {
+    $station_filter = $this->input->get("station_filter");
     $crud = new grocery_CRUD();
     $crud->set_subject("eDNA Samples")
       ->set_table("edna")
@@ -468,7 +457,8 @@ class Samples extends CI_Controller {
       ->set_relation_n_n("Collectors","collector_edna","collector","edna_id","collector_id","{first_name} {last_name}");
 
     $output = $crud->render();
-    $this->_render_output("generic_template",$output);
+    $output->station_filter = $station_filter;
+    $this->_render_output("edna_template",$output);
   }
 
   public function multi_edna($task=null)
@@ -502,7 +492,7 @@ class Samples extends CI_Controller {
          ->callback_insert(array($this,'_insert_multiple_edna'));
       $output = $crud->render();//$this->grocery_crud->render();
 
-      $this->_render_output("edna_template",$output);
+      $this->_render_output("multi_edna_template",$output);
     } else {
       $this->load->helper('url');
       redirect(base_url('samples/edna'));
