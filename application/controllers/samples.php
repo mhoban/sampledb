@@ -339,16 +339,28 @@ class Samples extends CI_Controller {
 
   public function station($task=null, $id=null, $display=null)
   {
-    $crud = new grocery_CRUD();
-    $crud->set_subject("Station")
-      ->set_table("station")
-      ->set_relation("grouping","grouping","grouping_name")
-      ->set_relation("protection_status","status","status_name")
-      ->unset_texteditor("notes");
-    $output = $crud->render();//$this->grocery_crud->render();
-    $output->displaymode = $display=='display' ? true : false;
+    if (strtolower($task) == "json") {
+      if (isset($id) && $id != null) {
+        $this->db->select("station_name,grouping.grouping_name,status.status_name,island,country,lat,lon,depth_min,depth_max,notes");
+        $this->db->from("station");
+        $this->db->join("grouping","grouping.grouping_id = station.grouping");
+        $this->db->join("status","status.status_id = station.protection_status");
+        $this->db->where("station_id",$id);
+        $station_info = $this->db->get()->result_object();
+        $this->output->set_output(json_encode($station_info));
+      }
+    } else {
+      $crud = new grocery_CRUD();
+      $crud->set_subject("Station")
+           ->set_table("station")
+           ->set_relation("grouping","grouping","grouping_name")
+           ->set_relation("protection_status","status","status_name")
+           ->unset_texteditor("notes");
+      $output = $crud->render();//$this->grocery_crud->render();
+      $output->displaymode = $display=='display' ? true : false;
 
-    $this->_render_output("station_template",$output);
+      $this->_render_output("station_template",$output);
+    }
   }
 
   public function grouping($task=null)

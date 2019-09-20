@@ -86,27 +86,23 @@ function filterMap(filter=null)
   if (!filter || filter == null) {
     filter = {
       text_filter: $("#station_filter").val(),
-      grouping_filter: $("#grouping").val(),
-      island_filter: $("#islands").val(),
-      country_filter: $("#countries").val()
+      grouping: $("#grouping").val(),
+      islands: $("#islands").val(),
+      countries: $("#countries").val()
     };
   } else {
     $("#station_filter").val(filter.text_filter);
-    $("#grouping").val(filter.grouping_filter).trigger("chosen:updated");
-    $("#islands").val(filter.island_filter).trigger("chosen:updated");
-    $("#countries").val(filter.country_filter).trigger("chosen:updated");
+    $("#grouping").val(filter.grouping).trigger("chosen:updated");
+    $("#islands").val(filter.islands).trigger("chosen:updated");
+    $("#countries").val(filter.countries).trigger("chosen:updated");
   }
 	oms.removeAllMarkers();
   Cookies.set("station_map_filter",filter);
-  //var text_filter = $("#station_filter").val();
-  //var grouping_filter = $("#grouping").val();
-  //var island_filter = $("#islands").val();
-  //var country_filter = $("#countries").val();
   $.getJSON(base_url + "samples/station_map/filter",{
     "filter": filter.text_filter,
-    "grouping": filter.grouping_filter,
-    "island": filter.island_filter,
-    "country": filter.country_filter
+    "grouping": filter.grouping,
+    "island": filter.islands,
+    "country": filter.countries
   }, function(data) {
     deleteMarkers();
     data.map(function(e,i,a) {
@@ -119,7 +115,9 @@ function filterMap(filter=null)
       };
       var m = createMarker_map(marker_options);
       m.addListener("spider_click",function(e) {
-        showSamples(this.title);
+        console.log(this.constructor.name);
+        console.log(e.constructor.name);
+        //showSamples(this.title);
       });
 			oms.addMarker(m);
     });
@@ -127,23 +125,32 @@ function filterMap(filter=null)
   });
 }
 
-function updateSelect(element,qry="")
+function updateSelect(element,config)
 {
   $(element).each(function(index) {
-    var q = qry;
-    if (q == "")
+    var q = config.qry;
+    if (typeof(q) == "undefined" || q == "")
       q = $(this).attr("id");
     $.ajax({
       url: base_url + "samples/" + q + "/json",
       type: "GET",
       dataType: "json",
       sel: $(this),
+      qry: q,
+      filter: config.filter,
       success: function(data) {
+        console.log(this.qry);
+        console.log(this.filter);
         data.splice(0,0,{id: "", name: "*any*"}); // insert a blank option for any value
         var items = data.map(function(e,i,a) {
           return ($("<option>").attr('value',e.id).text(e.name));
         });
         this.sel.empty().append(items);
+        if (typeof(this.filter) != "undefined") {
+          if (typeof(this.filter[this.qry]) != "undefined") {
+            this.sel.val(this.filter[this.qry]);
+          }
+        }
         this.sel.trigger("chosen:updated");
       }
     });
@@ -166,13 +173,13 @@ function setup()
   $("#clearfilter").click(function() {
     filterMap({
       text_filter: "",
-      grouping_filter: "",
-      island_filter: "",
-      country_filter: "" 
+      grouping: "",
+      islands: "",
+      countries: "" 
     });
   });
-  updateSelect("select");
   filter = Cookies.getJSON("station_map_filter");
+  updateSelect("select",{filter: filter});
   filterMap(filter); 
 }
 
