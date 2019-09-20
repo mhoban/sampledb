@@ -129,20 +129,25 @@ function filterMap(filter=null)
 
 function updateSelect(element,qry="")
 {
-  $e = $(element);
-  if (qry == "")
-    qry = element.replace(/^#/,"");
-  if ($e.length > 0) {
-    $.getJSON(base_url + "samples/" + qry + "/json", function(data) {
-      var $e = $(element);
-      data.splice(0,0,{id: "", name: "*any*"}); // insert a blank option for any value
-      var items = data.map(function(e,i,a) {
-        return ($("<option>").attr('value',e.id).text(e.name));
-      });
-      $e.empty().append(items);
-      $e.trigger("chosen:updated");
+  $(element).each(function(index) {
+    var q = qry;
+    if (q == "")
+      q = $(this).attr("id");
+    $.ajax({
+      url: base_url + "samples/" + q + "/json",
+      type: "GET",
+      dataType: "json",
+      sel: $(this),
+      success: function(data) {
+        data.splice(0,0,{id: "", name: "*any*"}); // insert a blank option for any value
+        var items = data.map(function(e,i,a) {
+          return ($("<option>").attr('value',e.id).text(e.name));
+        });
+        this.sel.empty().append(items);
+        this.sel.trigger("chosen:updated");
+      }
     });
-  }
+  });
 }
 
 function setup()
@@ -166,17 +171,9 @@ function setup()
       country_filter: "" 
     });
   });
-  // make these things load synchronously so when we filter the map the dropdowns will have content
-  $.ajaxSetup({async: false});
-  updateSelect("#grouping");
-  updateSelect("#islands");
-  updateSelect("#countries");
-  $.ajaxSetup({async: true});
-  // something weird about the load order of different components allow the below hack to make things work
-  //setTimeout(function() { 
-    filter = Cookies.getJSON("station_map_filter");
-    filterMap(filter); 
-  //},0);
+  updateSelect("select");
+  filter = Cookies.getJSON("station_map_filter");
+  filterMap(filter); 
 }
 
 $(function() {
