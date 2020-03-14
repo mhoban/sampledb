@@ -44,22 +44,23 @@ a:hover
 <body>
 <!-- Beginning header -->
   <div id="hdrlist">
+  eDNA:
+  <?php print_header(site_url('samples/edna'),'eDNA samples','edna'); ?> |
+  <?php print_header(site_url('samples/multi_edna/add'),'Add multiple eDNA samples','multi_edna'); ?> |
+  <?php print_header(site_url('samples/kby_edna/add'),'Add Kāne‘ohe samples','kby_edna'); ?> |
+  <?php print_header(site_url('samples/substrate'),'eDNA Substrate','substrate'); ?> |
+  <?php print_header(site_url('samples/edna_method'),'eDNA Method','edna_method'); ?> <br>
   Fish:
   <?php print_header(site_url('samples/sample'),'Samples','sample'); ?> |
   <?php print_header(site_url('samples/multi_sample/add'),'Add multiple samples','multi_sample'); ?> |
   <?php print_header(site_url('samples/fishcount'),'Fish count','fishcount'); ?> |
   <?php print_header(site_url('samples/benthic_obs'),'Benthic observations','benthic_obs'); ?> |
   <?php print_header(site_url('samples/microhab'),'Microhabitat','microhab'); ?> <br>
-  eDNA:
-  <?php print_header(site_url('samples/edna'),'eDNA samples','edna'); ?> |
-  <?php print_header(site_url('samples/multi_edna/add'),'Add multiple eDNA samples','multi_edna'); ?> |
-  <?php print_header(site_url('samples/substrate'),'eDNA Substrate','substrate'); ?> |
-  <?php print_header(site_url('samples/edna_method'),'eDNA Method','edna_method'); ?> <br>
   General:
   <?php print_header(site_url('samples/station'),'Stations','station'); ?> |
+  <?php print_header(site_url('samples/station_map'),'Station map','station_map'); ?> |
   <?php print_header(site_url('samples/grouping'),'Station groupings','grouping'); ?> |
   <?php print_header(site_url('samples/protection_status'),'Protection status','protection_status'); ?> |
-  <?php print_header(site_url('samples/station_map'),'Station map','station_map'); ?> |
   <?php print_header(site_url('samples/collector'),'Collectors','collector'); ?> |
   <?php print_header(site_url('samples/taxa'),'Taxa','taxa'); ?> 
   </div>

@@ -36,6 +36,9 @@ $(function() {
     e.preventDefault();
     return false;
   });
+  var station_filter = "<?php echo $station_filter; ?>";
+  $("#search_text").val(station_filter);
+  $("#filtering_form").submit(); 
 });
 </script>
 <div>

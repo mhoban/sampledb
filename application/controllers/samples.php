@@ -135,15 +135,21 @@ class Samples extends CI_Controller {
     $sample_number = $data['number_start'];
     $to_add = $data['number_added'];
     $base_notes = $data['notes'];
+    $kby = isset($data['kby']);
     unset($data['collectors']);
     unset($data['sample_prefix']);
     unset($data['number_start']);
     unset($data['number_added']);
+    unset($data['kby']);
 
     $collectors = array();
     for ($i=0; $i < $to_add; $i++) {
       $data['edna_number'] = sprintf("%s%03d",$prefix,$sample_number+$i);
       $data['notes'] = sprintf('%d/%d',$i+1,$to_add);
+      if ($kby && ($i == ($to_add-1))) {
+        $data['method_id'] = 5;
+        $data['notes'] .= "\ncontrol";
+      }
       if (strlen($base_notes) > 0)
         $data['notes'] .= " - " . $base_notes;
       $res = $this->db->insert('edna',$data);
@@ -262,20 +268,44 @@ class Samples extends CI_Controller {
   {
     if ($task == "filter") {
       $filter = $this->input->get('filter');
+      $sample = $this->input->get('sample');
       $grouping = $this->input->get('grouping');
       $island = $this->input->get('island');
       $country = $this->input->get('country');
-      $this->db->select("station_id,station_name,lat,lon,notes");
+      if (!$sample) $sample = "";
+
+      $this->db->select("station.station_id,station.station_name,station.lat,station.lon,station.notes,count(edna.edna_id) as `ecount`, count(sample.sample_id) as `scount`");
+      $this->db->from("station");
+      $this->db->join("edna","edna.station_id = station.station_id","left");
+      $this->db->join("sample","sample.station_id = station.station_id","left");
       if ($filter && strlen($filter) > 0)
-        $this->db->like("station_name",$filter);
+        $this->db->like("station.station_name",$filter);
+
+      $this->db->group_start();
+      $this->db->like("edna.edna_number",$sample);
+      $this->db->or_like("concat(sample.sample_prefix,sample.sample_number)",$sample);
+      $this->db->group_end(); 
+
       if ($grouping && $grouping > 0)
-        $this->db->where("grouping",$grouping);
+        $this->db->where("station.grouping",$grouping);
       if ($island && strlen($island) > 0)
-        $this->db->where("island",$island);
+        $this->db->where("station.island",$island);
       if ($country && strlen($country) > 0)
-        $this->db->where("country",$country);
-      $stations = $this->db->get("station")->result_object();
+        $this->db->where("station.country",$country);
+      $this->db->group_by("station.station_id");
+      $stations = $this->db->get()->result_object();
       $this->output->set_output(json_encode($stations));
+      //$this->output->set_output($this->db->get_compiled_select());
+      //$this->db->select("station_id,station_name,lat,lon,notes");
+      //if ($filter && strlen($filter) > 0)
+        //$this->db->like("station_name",$filter);
+      //if ($grouping && $grouping > 0)
+        //$this->db->where("grouping",$grouping);
+      //if ($island && strlen($island) > 0)
+        //$this->db->where("island",$island);
+      //if ($country && strlen($country) > 0)
+        //$this->db->where("country",$country);
+      //$stations = $this->db->get("station")->result_object();
     } else {
       //$config = array(
         //'zoom' => "auto",
@@ -324,7 +354,7 @@ class Samples extends CI_Controller {
 	public function index()
 	{
     $this->load->helper('url');
-    redirect(base_url('samples/sample'));
+    redirect(base_url('samples/edna'));
 	}
 
   public function collector()
@@ -346,7 +376,7 @@ class Samples extends CI_Controller {
         $this->db->join("grouping","grouping.grouping_id = station.grouping");
         $this->db->join("status","status.status_id = station.protection_status");
         $this->db->where("station_id",$id);
-        $station_info = $this->db->get()->result_object();
+        $station_info = $this->db->get()->row(); //get()->result_object();
         $this->output->set_output(json_encode($station_info));
       }
     } else {
@@ -434,6 +464,7 @@ class Samples extends CI_Controller {
 
   public function sample()
   {
+    $station_filter = $this->input->get("station_filter");
     $crud = new grocery_CRUD();
     $crud->set_subject("Sample")
       ->set_table("sample")
@@ -447,6 +478,7 @@ class Samples extends CI_Controller {
       ->callback_column($this->_unique_field_name('station_id'),array($this,'_linkify_station_id'))
       ->set_relation_n_n("Collectors","collector_sample","collector","sample_id","collector_id","{first_name} {last_name}");
     $output = $crud->render();//$this->grocery_crud->render();
+    $output->station_filter = $station_filter;
 
     $this->_render_output("sample_template",$output);
   }
@@ -472,6 +504,52 @@ class Samples extends CI_Controller {
     $output = $crud->render();
     $output->station_filter = $station_filter;
     $this->_render_output("edna_template",$output);
+  }
+
+  public function kby_edna($task=null)
+  {
+    if ($task == 'add' || $task == 'insert' || $task == 'insert_validation')
+    {
+      $crud = new grocery_CRUD();
+      $crud->set_subject("Kāne‘ohe bleaching study eDNA sample set")
+         ->set_table("edna")
+         //->add_fields("station_id","substrate_id","method_id","substrate_volume","collection_date","box_number","collectors","sample_prefix","number_start","number_added","notes")
+         ->add_fields("station_id","collection_date","collectors","number_start","notes",
+                      "kby","sample_prefix","number_added","substrate_volume","substrate_id","method_id")
+         ->callback_add_field('number_start',function() {
+           return '<input id="field-number_start" class="form-control" name="number_start" type="text" value="' . ($this->_max_edna('KBY')+1) . '">';
+           //return '<input type="text" class="form-control" name="mlh_number" id="field-mlh_number" value="' . ($this->_max_mlh()+1) . '">';
+         })
+         ->field_type("kby","hidden","true")
+         ->field_type("sample_prefix","hidden","KBY")
+         ->field_type("number_added","hidden",6)
+         ->field_type("substrate_volume","hidden",1)
+         ->field_type("substrate_id","hidden",1)
+         ->field_type("method_id","hidden",4)
+         //->callback_add_field("sample_prefix",function() {
+           //return "<input type=\"text\" id=\"field-sample_prefix\" class=\"form-control\" name=\"sample_prefix\" value=\"SGP\">";
+         //})
+         ->required_fields("station_id","substrate_id","substrate_volume","colletion_date","sample_prefix","number_start","number_added")
+         ->set_relation("station_id","station","{station_name} ({station_id})")
+         //->set_relation("substrate_id","substrate","substrate_name")
+         //->set_relation("method_id","method","{method_name}")
+         ->set_relation_n_n("collectors","collector_edna","collector","edna_id","collector_id","{first_name} {last_name}")
+         ->display_as("station_id","Station")
+         //->display_as("substrate_id","Substrate")
+         //->display_as("method_id","Method")
+         ->display_as('number_start','Starting sample number (KBY)')
+         //->display_as("number_added","Number of samples to add")
+         //->display_as("substrate_volume","Substrate volume (L)")
+         ->display_as("notes","Notes")
+         ->unset_texteditor("notes")
+         ->callback_insert(array($this,'_insert_multiple_edna'));
+      $output = $crud->render();//$this->grocery_crud->render();
+
+      $this->_render_output("multi_edna_template",$output);
+    } else {
+      $this->load->helper('url');
+      redirect(base_url('samples/edna'));
+    }
   }
 
   public function multi_edna($task=null)

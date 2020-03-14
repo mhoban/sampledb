@@ -86,12 +86,14 @@ function filterMap(filter=null)
   if (!filter || filter == null) {
     filter = {
       text_filter: $("#station_filter").val(),
+      number_filter: $("#sample_filter").val(),
       grouping: $("#grouping").val(),
       islands: $("#islands").val(),
       countries: $("#countries").val()
     };
   } else {
     $("#station_filter").val(filter.text_filter);
+    $("#sample_filter").val(filter.number_filter);
     $("#grouping").val(filter.grouping).trigger("chosen:updated");
     $("#islands").val(filter.islands).trigger("chosen:updated");
     $("#countries").val(filter.countries).trigger("chosen:updated");
@@ -100,6 +102,7 @@ function filterMap(filter=null)
   Cookies.set("station_map_filter",filter);
   $.getJSON(base_url + "samples/station_map/filter",{
     "filter": filter.text_filter,
+    "sample": filter.number_filter,
     "grouping": filter.grouping,
     "island": filter.islands,
     "country": filter.countries
@@ -110,14 +113,43 @@ function filterMap(filter=null)
       var marker_options = {
         map: map,
         position: point,
-        title: e.station_name,
+        title: e.station_name + " (eDNA: " + e.ecount + ", fish: " + e.scount + ")",
+        qry: e.station_name,
         station_id: e.station_id
       };
       var m = createMarker_map(marker_options);
       m.addListener("spider_click",function(e) {
-        console.log(this.constructor.name);
-        console.log(e.constructor.name);
-        //showSamples(this.title);
+        var content = "<div>" + 
+          "[<a href=\"" + base_url + "samples/edna?station_filter=" + encodeURI(this.qry) + "\">show edna</a>]" + " " +
+          "[<a href=\"" + base_url + "samples/sample?station_filter=" + encodeURI(this.qry) + "\">show fish</a>]" +
+          "<iframe style=\"border: 0px;\" src=\"" + 
+          base_url + "samples/station/read/" + this.station_id + "/display\" " +
+          "width=\"100%\" height=\"100%\"></iframe>";
+        iw_map.setContent(content);
+        iw_map.open(this.map,this);
+        //$.ajax({
+          //url: base_url + "samples/station/json/" + this.station_id, 
+          //type: "GET",
+          //dataType: "json",
+          //map: this.map,
+          //mark: this,
+          //success: function(data) {
+            //var content = "<div>" + 
+              //"<table border=1>" + 
+              //"<tr><th colspan=2>" + data.station_name + "</th></tr>" + 
+              //"<tr><td>Grouping:</td><td>" + data.grouping_name + "</td>" + 
+              //"<tr><td>Protection status:</td><td>" + data.status_name + "</td>" +
+              //"<tr><td>Island:</td><td>" + data.island + "</td>" + 
+              //"<tr><td>Country:</td><td>" + data.country + "</td>" + 
+              //"<tr><td>Position:</td><td>" + data.lat + "," + data.lon + "</td>" +
+              //"<tr><td>Depth:</td><td>" + data.depth_min + " - " + data.depth_max + " (m)" + 
+              //"<tr><td colspan=2 align=\"left\">Notes:<br>" + data.notes + "</td></tr>" + 
+              //"</table>" + 
+              //"</div>";
+            //iw_map.setContent(content);
+            //iw_map.open(this.map,this.mark);
+          //}
+        //});
       });
 			oms.addMarker(m);
     });
@@ -139,8 +171,6 @@ function updateSelect(element,config)
       qry: q,
       filter: config.filter,
       success: function(data) {
-        console.log(this.qry);
-        console.log(this.filter);
         data.splice(0,0,{id: "", name: "*any*"}); // insert a blank option for any value
         var items = data.map(function(e,i,a) {
           return ($("<option>").attr('value',e.id).text(e.name));
@@ -170,6 +200,12 @@ function setup()
       e.preventDefault();
     }
   });
+  $("#sample_filter").on("keydown",function(e) {
+    if (e.which == 13) {
+      filterMap();
+      e.preventDefault();
+    }
+  });
   $("#clearfilter").click(function() {
     filterMap({
       text_filter: "",
@@ -188,12 +224,35 @@ $(function() {
 });
 </script>
 <div id="top">
-Filter stations by: <br>
-Station name: <input id="station_filter" type="text"> |
-Station grouping: <select id="grouping"></select> | 
-Island: <select id="islands"></select> |
-Country: <select id="countries"></select>
-<input type="button" id="clearfilter" value="Clear filters">
+<!--
+<table>
+<tr><td colspan=4>Filter stations by:</td></tr>
+<tr><td>Station name:</td><td><input id="station_filter" type="text"></td>
+<td>Sample number:</td><td><input id="sample_filter" type="text"></td></tr>
+<tr><td>Station grouping:</td><td><select id="grouping"></select></td>
+<td>Island:</td><td><select id="islands"></select></td></tr>
+<tr><td>Country:</td><td><select id="countries"></select></td>
+<td><input type="button" id="clearfilter" value="Clear filters"></td></tr>
+</table>
+-->
+<table border=0>
+<tr>
+<td colspan=2>Filter stations</td>
+</tr>
+<tr>
+<td>Station name:</td><td><input id="station_filter" type="text"></td>
+<td align="center" colspan=2><input type="button" id="clearfilter" value="Clear filters"></td>
+</tr>
+<tr>
+<td>Sample/eDNA number:</td><td><input id="sample_filter" type="text"></td>
+<td>Station grouping:</td><td><select id="grouping"></select></td>
+</tr>
+<tr>
+<td>Island:</td><td><select id="islands"></select></td>
+<td>Country:</td><td><select id="countries"></select></td>
+</tr>
+</table>
+
 </div>
 <div id="bottom">
 <?php #echo $map['js']; ?>
