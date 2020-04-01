@@ -44,6 +44,12 @@ $(function(){
 	call_fancybox();
 	add_edit_button_listener();
 
+  $('#search_text').keydown(function(e) {
+    if (e.which == 13) {
+      $(this).closest('.flexigrid').find('.filtering_form').trigger('submit');
+    }
+  });
+
 	$('.filtering_form').submit(function(){
 		var crud_page =  parseInt($(this).closest('.flexigrid').find('.crud_page').val(), 10);
 		var last_page = parseInt($(this).closest('.flexigrid').find('.last-page-number').html(), 10);
