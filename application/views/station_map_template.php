@@ -2,12 +2,14 @@
 var base_url = '<?php echo base_url(); ?>';
 </script>
 <link type="text/css" rel="stylesheet" href="http://localhost:8888/sampledb/assets/grocery_crud/css/jquery_plugins/chosen/chosen.css" />
+<link type="text/css" rel="stylesheet" href="<?php echo base_url('assets/grocery_crud/css/ui/simple/jquery-ui-1.10.1.custom.min.css'); ?>">
 <script src="assets/grocery_crud/js/jquery-1.11.1.min.js"></script>
 <script src="assets/js/js.cookie.js"></script>
 <script src="assets/js/oms.min.js"></script>
 <script src="assets/grocery_crud/js/jquery_plugins/jquery.chosen.min.js"></script>
 <script src="assets/grocery_crud/js/jquery_plugins/config/jquery.chosen.config.js"></script>
 <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=<?php echo $apiKey; ?>"></script>
+<script src="<?php echo base_url('assets/grocery_crud/js/jquery_plugins/ui/jquery-ui-1.10.3.custom.min.js'); ?>"></script>
 <script>
 var map; // Global declaration of the map
 var oms; 
@@ -86,14 +88,14 @@ function filterMap(filter=null)
   if (!filter || filter == null) {
     filter = {
       text_filter: $("#station_filter").val(),
-      number_filter: $("#sample_filter").val(),
+      number_filter: $("#sample_filter").val().split(/,/),
       grouping: $("#grouping").val(),
       islands: $("#islands").val(),
       countries: $("#countries").val()
     };
   } else {
     $("#station_filter").val(filter.text_filter);
-    $("#sample_filter").val(filter.number_filter);
+    $("#sample_filter").val(filter.number_filter.join(","));
     $("#grouping").val(filter.grouping).trigger("chosen:updated");
     $("#islands").val(filter.islands).trigger("chosen:updated");
     $("#countries").val(filter.countries).trigger("chosen:updated");
@@ -187,6 +189,41 @@ function updateSelect(element,config)
   });
 }
 
+function filter_import(dlg)
+{
+  var sampleids = $(dlg).find("#sampleids").val().trim().split(/\n/);
+  $("#sample_filter").val(sampleids.join(","));
+  filterMap();
+}
+
+function import_filter(e)
+{
+  var $dialog = $("#dlg")
+    .dialog({
+      autoOpen: true,
+      modal: true,
+      height: 420,
+      width: 290,
+      resizable: false,
+      title: 'Filter by sample IDs',
+      buttons: {
+        Ok: function() {
+          filter_import(this);
+          $(this).dialog('close');
+        },
+        Cancel: function() {
+          $(this).dialog('close');
+        }
+      },
+      open: function(e,ui) {
+        ids = $("#sample_filter").val().split(/,/);
+        nl = ids[0] != "" ? "\n" : "";
+        $(this).find('#sampleids').val(ids.join("\n") + nl); 
+      }
+    });
+  e.preventDefault();
+}
+
 function setup()
 {
 	initialize_map();
@@ -194,6 +231,7 @@ function setup()
   $("select").on("change",function(e) {
     filterMap();
   });
+  $("#import_filter").click(import_filter);
   $("#station_filter").on("keydown",function(e) {
     if (e.which == 13) {
       filterMap();
@@ -211,7 +249,8 @@ function setup()
       text_filter: "",
       grouping: "",
       islands: "",
-      countries: "" 
+      countries: "",
+      number_filter: []
     });
   });
   filter = Cookies.getJSON("station_map_filter");
@@ -235,16 +274,20 @@ $(function() {
 <td><input type="button" id="clearfilter" value="Clear filters"></td></tr>
 </table>
 -->
-<table border=0>
+<div id="dlg" style="display: none">
+Enter one sample ID per line<br>
+<textarea id='sampleids' rows='14' cols='30'></textarea>
+</div>
+<table border=1>
 <tr>
-<td colspan=2>Filter stations</td>
+<td ><strong>Filter stations</strong></td>
+<td align="left" colspan=3><input type="button" id="clearfilter" value="Clear filters"></td>
+</tr>
+<tr>
+<td>Sample/eDNA number:</td><td colspan=3><input id="sample_filter" type="text"> [<a href="" id="import_filter">list</a>]</td>
 </tr>
 <tr>
 <td>Station name:</td><td><input id="station_filter" type="text"></td>
-<td align="center" colspan=2><input type="button" id="clearfilter" value="Clear filters"></td>
-</tr>
-<tr>
-<td>Sample/eDNA number:</td><td><input id="sample_filter" type="text"></td>
 <td>Station grouping:</td><td><select id="grouping"></select></td>
 </tr>
 <tr>
@@ -257,5 +300,5 @@ $(function() {
 <div id="bottom">
 <?php #echo $map['js']; ?>
 <?php #echo $map['html']; ?>
-<div id="map_canvas" style="width:100%; height:450px;"></div>
+<div id="map_canvas" style="width:100%; height:600px;"></div>
 </div>

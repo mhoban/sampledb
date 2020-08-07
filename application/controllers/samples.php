@@ -272,19 +272,25 @@ class Samples extends CI_Controller {
       $grouping = $this->input->get('grouping');
       $island = $this->input->get('island');
       $country = $this->input->get('country');
-      if (!$sample) $sample = "";
+      if (!$sample) $sample = array("");
+      if (!is_array($sample)) $sample = array($sample);
 
       $this->db->select("station.station_id,station.station_name,station.lat,station.lon,station.notes,count(edna.edna_id) as `ecount`, count(sample.sample_id) as `scount`");
       $this->db->from("station");
       $this->db->join("edna","edna.station_id = station.station_id","left");
       $this->db->join("sample","sample.station_id = station.station_id","left");
+      $this->db->where("station.lat != 0 AND station.lon != 0");
       if ($filter && strlen($filter) > 0)
         $this->db->like("station.station_name",$filter);
 
-      $this->db->group_start();
-      $this->db->like("edna.edna_number",$sample);
-      $this->db->or_like("concat(sample.sample_prefix,sample.sample_number)",$sample);
-      $this->db->group_end(); 
+      if (count($sample) && $sample[0] != "") {
+        $this->db->group_start();
+        $this->db->where("edna.edna_number REGEXP",implode("|",$sample));
+        $this->db->or_where("concat(sample.sample_prefix,sample.sample_number) REGEXP",implode("|",$sample));
+        // $this->db->like("edna.edna_number",$sample);
+        // $this->db->or_like("concat(sample.sample_prefix,sample.sample_number)",$sample);
+        $this->db->group_end(); 
+      }
 
       if ($grouping && $grouping > 0)
         $this->db->where("station.grouping",$grouping);
@@ -393,6 +399,23 @@ class Samples extends CI_Controller {
     }
   }
 
+  public function state($task=null)
+  {
+    if ($task == "json") {
+      $this->db->select("state_id as `id`, state_name as `name`");
+      $this->db->from("state");
+      $states = $this->db->get()->result_object();
+      $this->output->set_output(json_encode($states));
+    } else {
+      $crud = new grocery_CRUD();
+      $crud->set_subject("Sample State")
+           ->set_table("state");
+      $output = $crud->render();//$this->grocery_crud->render();
+
+      $this->_render_output("generic_template",$output);
+    }
+  }
+
   public function grouping($task=null)
   {
     if ($task == "json") {
@@ -473,6 +496,8 @@ class Samples extends CI_Controller {
       })
       ->display_as('mlh_number','MLH number')
       ->display_as("taxon_id","Taxon")
+      ->display_as("state_id","Sample State")
+      ->set_relation("state_id","state","{state_name}")
       ->set_relation("taxon_id","taxa","{genus} {species}")
       ->set_relation("station_id","station","{station_name} ({station_id})")
       ->callback_column($this->_unique_field_name('station_id'),array($this,'_linkify_station_id'))
@@ -496,9 +521,11 @@ class Samples extends CI_Controller {
       ->display_as("substrate_id","Substrate")
       ->display_as("substrate_volume","Substrate volume (L)")
       ->display_as("method_id","Method")
+      ->display_as("state_id","Sample State")
       ->set_relation("station_id","station","{station_name} ({station_id})")
       ->set_relation("method_id","method","{method_name}")
       ->set_relation("substrate_id","substrate","{substrate_name}")
+      ->set_relation("state_id","state","{state_name}")
       ->set_relation_n_n("Collectors","collector_edna","collector","edna_id","collector_id","{first_name} {last_name}");
 
     $output = $crud->render();
@@ -588,6 +615,34 @@ class Samples extends CI_Controller {
       $this->load->helper('url');
       redirect(base_url('samples/edna'));
     }
+  }
+
+  public function edna_calendar() 
+  {
+    $this->db->select(
+      "st.station_name AS `Subject`, 
+       e.collection_date AS `Start Date`, 
+       e.collection_date AS `End Date`,  
+       GROUP_CONCAT( 
+         DISTINCT e.edna_number 
+         ORDER BY e.edna_id ASC 
+         SEPARATOR '\n' 
+       ) AS `Description`" 
+    );
+    $this->db->from("edna e");
+    $this->db->join("station st","st.station_id = e.station_id","inner");
+    $this->db->join("grouping g","g.grouping_id = st.grouping","inner");
+    $this->db->where("g.grouping_name LIKE '%bleach%'");
+    $this->db->group_by("e.station_id, e.collection_date");
+    $this->db->order_by("e.collection_date, st.station_name","ASC");
+    $q = $this->db->get();
+
+    $this->load->dbutil();
+    $csv = $this->dbutil->csv_from_result($q);
+    header("Content-Description: File Transfer");
+    header("Content-Disposition: attachment; filename=calendar.csv");
+    header("Content-Type: application/csv; ");
+    echo $csv;
   }
 
   public function substrate()
