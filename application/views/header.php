@@ -1,10 +1,13 @@
 <?php
-function print_header($url,$name,$page)
+function print_header($url,$name,$page,$task="")
 {
-  global $method,$class;
-  if ($method == $page) echo "[";
+  global $method;
+
+  $s = implode("_",array_filter(array($method,$task)));
+
+  if ($s == $page) echo "<strong>[";
   echo "<a href=\"$url\">$name</a>";
-  if ($method == $page) echo "]";
+  if ($s == $page) echo "]</strong>";
 }
 ?>
 <!DOCTYPE html>
@@ -43,17 +46,22 @@ a:hover
 </head>
 <body>
 <!-- Beginning header -->
+<?php if (preg_match('/test/',$db)): ?>
+  <p><h3 style="color: red">TEST DATABASE</h3></p>
+<?php endif; ?>
   <div id="hdrlist">
   eDNA:
   <?php print_header(site_url('samples/edna'),'eDNA samples','edna'); ?> |
   <?php print_header(site_url('samples/multi_edna/add'),'Add multiple eDNA samples','multi_edna'); ?> |
   <?php print_header(site_url('samples/kby_edna/add'),'Add Kāne‘ohe samples','kby_edna'); ?> |
+  <?php print_header(site_url('samples/editstate/edna'),'Status update','editstate_edna',$task); ?> |
   <?php print_header(site_url('samples/substrate'),'eDNA Substrate','substrate'); ?> |
   <?php print_header(site_url('samples/edna_method'),'eDNA Method','edna_method'); ?> |
   <?php print_header(site_url('samples/edna_calendar'),'Export Calendar CSV','edna_calendar'); ?> <br>
   Fish:
   <?php print_header(site_url('samples/sample'),'Samples','sample'); ?> |
   <?php print_header(site_url('samples/multi_sample/add'),'Add multiple samples','multi_sample'); ?> |
+  <?php print_header(site_url('samples/editstate/fish'),'Status update','editstate_fish',$task); ?> |
   <?php print_header(site_url('samples/fishcount'),'Fish count','fishcount'); ?> |
   <?php print_header(site_url('samples/benthic_obs'),'Benthic observations','benthic_obs'); ?> |
   <?php print_header(site_url('samples/microhab'),'Microhabitat','microhab'); ?> <br>

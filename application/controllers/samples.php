@@ -8,6 +8,7 @@ class Samples extends CI_Controller {
 
 		$this->load->database();
     $this->load->helper("url");
+    $this->load->helper("form");
     $this->load->library("grocery_CRUD");
     $this->config->load("sampledb");
 	}
@@ -20,14 +21,21 @@ class Samples extends CI_Controller {
     if (is_object($output)) {
       $output->method = $this->router->method;
       $output->class = $this->router->class;
+      $output->task = $this->uri->segment(3);
     }
     else if (is_array($output)) {
       $output['method'] = $this->router->method;
       $output['class'] = $this->router->class;
+      $output['task'] = $this->uri->segment(3);
     }
   
-    if (!$content_only)
+    if (!$content_only) {
+      if (is_object($output))
+        $output->db = $this->db->database;
+      else
+        $output['db'] = $this->db->database;
       $this->load->view("header",$output);
+    }
     $this->load->view($template,$output);
     if (!$content_only)
       $this->load->view("footer",$output);
@@ -457,32 +465,34 @@ class Samples extends CI_Controller {
 
   public function multi_sample($task=null)
   {
-    if ($task != "add") {
-      $this->sample();
-      return;
-    }
-    $crud = new grocery_CRUD();
-    $crud->set_subject("Sample")
-      ->set_table("sample")
-      ->fields('station_id','taxon_id','mlh_number','fork_lengths','sample_prefix','sample_number','box_number','collection_date','collectors','number_added')
-      ->callback_add_field("number_added",function() {
-        return '<input type="text" name="number_collected" value="" maxlength="50" class="numeric form-control">';
-      })
-      ->callback_add_field('mlh_number',function() {
-        return '<input type="text" class="form-control" name="mlh_number" id="field-mlh_number" value="' . ($this->_max_mlh()+1) . '">';
-      })
-      ->required_fields('station_id','taxon_id','sample_prefix','collection_date')
-      ->set_relation("taxon_id","taxa","{genus} {species}")
-      ->set_relation("station_id","station","{station_name} ({station_id})")
-      ->set_relation_n_n("collectors","collector_sample","collector","sample_id","collector_id","{first_name} {last_name}")
-      ->display_as("station_id","Station")
-      ->display_as("taxon_id","Taxon")
-      ->display_as('sample_number','Starting sample number')
-      ->display_as('mlh_number','Starting MLH number')
-      ->callback_insert(array($this,'_insert_multiple_samples'));
-    $output = $crud->render();//$this->grocery_crud->render();
+    if ($task == 'add' || $task == 'insert' || $task == 'insert_validation')
+    {
+      $crud = new grocery_CRUD();
+      $crud->set_subject("Sample")
+        ->set_table("sample")
+        ->fields('station_id','taxon_id','mlh_number','fork_lengths','sample_prefix','sample_number','box_number','collection_date','collectors','number_added')
+        ->callback_add_field("number_added",function() {
+          return '<input type="text" name="number_collected" value="" maxlength="50" class="numeric form-control">';
+        })
+        ->callback_add_field('mlh_number',function() {
+          return '<input type="text" class="form-control" name="mlh_number" id="field-mlh_number" value="' . ($this->_max_mlh()+1) . '">';
+        })
+        ->required_fields('station_id','taxon_id','sample_prefix','collection_date')
+        ->set_relation("taxon_id","taxa","{genus} {species}")
+        ->set_relation("station_id","station","{station_name} ({station_id})")
+        ->set_relation_n_n("collectors","collector_sample","collector","sample_id","collector_id","{first_name} {last_name}")
+        ->display_as("station_id","Station")
+        ->display_as("taxon_id","Taxon")
+        ->display_as('sample_number','Starting sample number')
+        ->display_as('mlh_number','Starting MLH number')
+        ->callback_insert(array($this,'_insert_multiple_samples'));
+      $output = $crud->render();//$this->grocery_crud->render();
 
-    $this->_render_output("sample_template",$output);
+      $this->_render_output("sample_template",$output);
+    } else {
+      $this->load->helper('url');
+      redirect(base_url('samples/sample'));
+    }
   }
 
   public function sample()
@@ -514,7 +524,7 @@ class Samples extends CI_Controller {
     $crud = new grocery_CRUD();
     $crud->set_subject("eDNA Samples")
       ->set_table("edna")
-      ->required_fields("edna_number","station_id","substrate_id","method_id","substrate_volume","collection_date")
+      ->required_fields("edna_number","station_id","substrate_id","method_id","substrate_volume","collection_date","state_id")
       ->unset_texteditor("notes")
       ->display_as("edna_number","eDNA ID number")
       ->display_as("station_id","Station")
@@ -614,6 +624,34 @@ class Samples extends CI_Controller {
     } else {
       $this->load->helper('url');
       redirect(base_url('samples/edna'));
+    }
+  }
+
+  public function editstate($which=null,$task=null)
+  {
+    if (!$task) {
+      $this->_render_output("states_template",array("which" => $which));
+    } else {
+      if ($which == "edna") {
+        switch($task) {
+          case "insert":
+            $output = array("success" => false);
+            $idlist = $this->input->post("sampleids");
+            $state_id = $this->input->post("state_id");
+            $idlist = explode("\n",$idlist);
+            if (count($idlist) && $state_id) {
+              $this->db->set("state_id",$state_id);
+              $this->db->where_in("edna_number",$idlist);
+              if ($this->db->update("edna")) {
+                $output = array("success" => true, "num" => $this->db->affected_rows());
+              } else {
+                $output = array("success" => false, "num" => 0, "msg" => $this->db->_error_message());
+              }
+            }
+            $this->output->set_output(json_encode($output));
+        } 
+      }
+      
     }
   }
 
