@@ -59,7 +59,7 @@ function clear_filter(e)
 {
   $("#sample_ids").val("");
   $("#datagrid").html("");
-  $("#clipboard_link").hide();
+  $(".clipboard_link").hide();
   table_data = null;
   e.preventDefault();
   return false;
@@ -68,7 +68,8 @@ function clear_filter(e)
 function filter(e)
 {
   var sids = $("#sample_ids").val().trim().split(/\n/);
-  $.post(base_url + "/samples/export_station/json",{'station_ids[]': sids},function(data,status,xhr) {
+  var which = $("input:radio[name='which']:checked").val();
+  $.post(base_url + "/samples/export_station/json/" + which,{'sample_ids[]': sids},function(data,status,xhr) {
     table_data = data;
     var table = $('<table cellspacing="0">');
     $("#datagrid").html("");
@@ -84,8 +85,8 @@ function filter(e)
     }
     $("#datagrid").append(table);
   },"json");
-  if (table_data != null && table_data.length > 0)
-    $("#clipboard_link").show();
+  // if (table_data != null && table_data.length > 0)
+  $(".clipboard_link").show();
   e.preventDefault();
   return false;
 }
@@ -136,6 +137,26 @@ function export_csv(e)
   return false;
 }
 
+function get_all_edna(e) 
+{
+  e.preventDefault();
+  $.getJSON(base_url + '/samples/edna/json',function(data) {
+    $("#sample_ids").val(data.join("\n"));
+  });
+  $('input:radio[name="which"][value="edna"]').prop("checked",true);
+  return false;
+}
+
+function get_all_fish(e)
+{
+  e.preventDefault();
+  $.getJSON(base_url + "/samples/sample/json",function(data) {
+    $("#sample_ids").val(data.join("\n"));
+  });
+  $('input:radio[name="which"][value="sample"]').prop("checked",true);
+  return false;
+}
+
 $( function() {
   var panel_open = (Cookies.get("sample_panel_open") == "true") ? 0 : false;
   console.log("panel open: " + panel_open);
@@ -152,6 +173,8 @@ $( function() {
   $("#filter").click(filter);
   $("#clipboard").click(clipboard);
   $("#csv").click(export_csv);
+  $("#get_all_edna").click(get_all_edna);
+  $("#get_all_fish").click(get_all_fish);
   console.log(panel_open);
   if (panel_open !== false)
     $("#expando").hide();
@@ -162,23 +185,37 @@ $( function() {
 </script>
 <div id="container" class="float-container">
   <div id="accordion" class="float-child">
-    <h3>Sample ID list <span class="display: inline;" id="expando">(click to expand)</span></h3>
+    <h3>sample ID list <span class="display: inline;" id="expando">(click to expand)</span></h3>
     <div>
       <p>
-        Sample IDs, one per line
-        [<a href="" id="filter">filter</a>]
+        sample types:
+        <input type="radio" id="edna" name="which" value="edna" checked>
+        <label for="edna">eDNA</label>
+        <input type="radio" id="sample" name="which" value="sample">
+        <label for="sample">fish</label>
+      </p>
+      <p>
+        sample IDs, one per line
+        [<a href="" id="filter">get</a>]
         <!--<input type="button" id="filter" value="filter">-->
         [<a href="" id="clear">clear</a>]
       </p>
       <textarea id="sample_ids" rows="10" cols="35"></textarea>
-      <br>
-      <br>
+      <p>
+        [<a href="" id="get_all_edna">all eDNA</a>]
+        [<a href="" id="get_all_fish">all fish</a>]
+      </p>
     </div>
   </div>
 </div>
+<p>&nbsp;</p>
 <div id="datacontainer">
+  <div class="clipboard_link" style="display: none">
+    [<a href="" id="clipboard">copy to clipboard (tab-separated)</a>]
+    [<a href="" id="csv">export csv</a>]
+  </div>
   <div id="datagrid"></div>
-  <div id="clipboard_link" style="display: none">
+  <div class="clipboard_link" style="display: none">
     [<a href="" id="clipboard">copy to clipboard (tab-separated)</a>]
     [<a href="" id="csv">export csv</a>]
   </div>

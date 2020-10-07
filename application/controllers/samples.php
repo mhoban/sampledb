@@ -260,27 +260,37 @@ class Samples extends CI_Controller {
 
   public function edna($task=null)
   {
-    $station_filter = $this->input->get("station_filter");
-    $crud = new grocery_CRUD();
-    $crud->set_subject("eDNA Samples")
-      ->set_table("edna")
-      ->required_fields("edna_number","station_id","substrate_id","method_id","substrate_volume","collection_date","state_id")
-      ->unset_texteditor("notes")
-      ->display_as("edna_number","eDNA ID number")
-      ->display_as("station_id","Station")
-      ->display_as("substrate_id","Substrate")
-      ->display_as("substrate_volume","Substrate volume (L)")
-      ->display_as("method_id","Method")
-      ->display_as("state_id","Sample State")
-      ->set_relation("station_id","station","{station_name} ({station_id})")
-      ->set_relation("method_id","method","{method_name}")
-      ->set_relation("substrate_id","substrate","{substrate_name}")
-      ->set_relation("state_id","state","{state_name}")
-      ->set_relation_n_n("Collectors","collector_edna","collector","edna_id","collector_id","{first_name} {last_name}");
+    if (strtolower($task) == "json") {
+      $this->db->select("edna_number");
+      $q = $this->db->get("edna");
+      $r = array();
+      foreach ($q->result_array() as $row) {
+        $r[] = $row['edna_number'];
+      }
+      $this->output->set_output(json_encode($r));
+    } else {
+      $station_filter = $this->input->get("station_filter");
+      $crud = new grocery_CRUD();
+      $crud->set_subject("eDNA Samples")
+           ->set_table("edna")
+           ->required_fields("edna_number","station_id","substrate_id","method_id","substrate_volume","collection_date","state_id")
+           ->unset_texteditor("notes")
+           ->display_as("edna_number","eDNA ID number")
+           ->display_as("station_id","Station")
+           ->display_as("substrate_id","Substrate")
+           ->display_as("substrate_volume","Substrate volume (L)")
+           ->display_as("method_id","Method")
+           ->display_as("state_id","Sample State")
+           ->set_relation("station_id","station","{station_name} ({station_id})")
+           ->set_relation("method_id","method","{method_name}")
+           ->set_relation("substrate_id","substrate","{substrate_name}")
+           ->set_relation("state_id","state","{state_name}")
+           ->set_relation_n_n("Collectors","collector_edna","collector","edna_id","collector_id","{first_name} {last_name}");
 
-    $output = $crud->render();
-    $output->station_filter = $station_filter;
-    $this->_render_output("edna_template",$output);
+      $output = $crud->render();
+      $output->station_filter = $station_filter;
+      $this->_render_output("edna_template",$output);
+    }
   }
 
   public function multi_edna($task=null)
@@ -419,27 +429,37 @@ class Samples extends CI_Controller {
   # Fish sample functions
   # ######################
 
-  public function sample()
+  public function sample($which=null)
   {
-    $station_filter = $this->input->get("station_filter");
-    $crud = new grocery_CRUD();
-    $crud->set_subject("Sample")
-      ->set_table("sample")
-      ->callback_add_field('mlh_number',function() {
-        return '<input type="text" class="form-control" name="mlh_number" id="field-mlh_number" value="' . ($this->_max_mlh()+1) . '">';
-      })
-      ->display_as('mlh_number','MLH number')
-      ->display_as("taxon_id","Taxon")
-      ->display_as("state_id","Sample State")
-      ->set_relation("state_id","state","{state_name}")
-      ->set_relation("taxon_id","taxa","{genus} {species}")
-      ->set_relation("station_id","station","{station_name} ({station_id})")
-      ->callback_column($this->_unique_field_name('station_id'),array($this,'_linkify_station_id'))
-      ->set_relation_n_n("Collectors","collector_sample","collector","sample_id","collector_id","{first_name} {last_name}");
-    $output = $crud->render();//$this->grocery_crud->render();
-    $output->station_filter = $station_filter;
+    if (strtolower($which) == "json") {
+      $this->db->select("CONCAT(sample_prefix,sample_number) as `sample_number`");
+      $q = $this->db->get("sample");
+      $r = array();
+      foreach ($q->result_array() as $row) {
+        $r[] = $row['sample_number'];
+      }
+      $this->output->set_output(json_encode($r));
+    } else {
+      $station_filter = $this->input->get("station_filter");
+      $crud = new grocery_CRUD();
+      $crud->set_subject("Sample")
+           ->set_table("sample")
+           ->callback_add_field('mlh_number',function() {
+             return '<input type="text" class="form-control" name="mlh_number" id="field-mlh_number" value="' . ($this->_max_mlh()+1) . '">';
+           })
+           ->display_as('mlh_number','MLH number')
+           ->display_as("taxon_id","Taxon")
+           ->display_as("state_id","Sample State")
+           ->set_relation("state_id","state","{state_name}")
+           ->set_relation("taxon_id","taxa","{genus} {species}")
+           ->set_relation("station_id","station","{station_name} ({station_id})")
+           ->callback_column($this->_unique_field_name('station_id'),array($this,'_linkify_station_id'))
+           ->set_relation_n_n("Collectors","collector_sample","collector","sample_id","collector_id","{first_name} {last_name}");
+      $output = $crud->render();//$this->grocery_crud->render();
+      $output->station_filter = $station_filter;
 
-    $this->_render_output("sample_template",$output);
+      $this->_render_output("sample_template",$output);
+    }
   }
 
   public function multi_sample($task=null)
@@ -643,7 +663,7 @@ class Samples extends CI_Controller {
 
   public function grouping($task=null)
   {
-    if ($task == "json") {
+    if (strtolower($task) == "json") {
       $this->db->select("grouping_id as `id`,grouping_name as `name`");
       $this->db->from("grouping");
       $groupings = $this->db->get()->result_object();
@@ -661,7 +681,7 @@ class Samples extends CI_Controller {
 
   public function state($task=null)
   {
-    if ($task == "json") {
+    if (strtolower($task) == "json") {
       $this->db->select("state_id as `id`, state_name as `name`");
       $this->db->from("state");
       $states = $this->db->get()->result_object();
@@ -698,7 +718,7 @@ class Samples extends CI_Controller {
 
   public function taxa($task=null,$mode=null)
   {
-    if ($task == 'json') {
+    if (strtolower($task) == "json") {
       $this->db->from("taxa");
       $this->db->order_by("genus,species");
       $taxlist = $this->db->get()->result_object();
@@ -724,29 +744,59 @@ class Samples extends CI_Controller {
   # Export functions
   # ################
 
-  public function export_station($task=null)
+  public function export_station($task=null,$which=null)
   {
-    if ($task == "json") {
-      $sids = $this->input->post("station_ids");
-      // $this->output->set_output("<pre>".print_r($sids,TRUE)."</pre>");
-      if (!is_null($sids) && is_array($sids)) {
-        $this->db->select(
-          "e.edna_number as `edna_number`,
-          st.station_name as `station_name`,
-          st.island as `island`,
-          st.country as `country`,
-          st.depth_min as `depth_min`,
-          st.depth_max as `depth_max`,
-          st.lat as `lat`,
-          st.lon as `lon`,
-          g.grouping_name as `grouping`"
-        );
-        $this->db->from("edna e");
-        $this->db->join("station st","st.station_id = e.station_id","inner");
-        $this->db->join("grouping g","g.grouping_id = st.grouping","inner");
-        $this->db->where_in("e.edna_number",$sids);
-        $st = $this->db->get()->result_object();
-        $this->output->set_output(json_encode($st));
+    if (strtolower($task) == "json") {
+      if ($which == "edna") {
+        $sids = $this->input->post("sample_ids");
+        // $this->output->set_output("<pre>".print_r($sids,TRUE)."</pre>");
+        if (!is_null($sids) && is_array($sids)) {
+          $this->db->select(
+            "e.edna_number as `edna_number`,
+            st.station_name as `station_name`,
+            st.island as `island`,
+            st.country as `country`,
+            st.depth_min as `depth_min`,
+            st.depth_max as `depth_max`,
+            st.lat as `lat`,
+            st.lon as `lon`,
+            g.grouping_name as `grouping`"#,
+            #st.station_id as `hidden`"
+          );
+          $this->db->from("edna e");
+          $this->db->join("station st","st.station_id = e.station_id","inner");
+          $this->db->join("grouping g","g.grouping_id = st.grouping","inner");
+          $this->db->where_in("e.edna_number",$sids);
+          $this->db->order_by("e.edna_number","ASC");
+          $st = $this->db->get()->result_object();
+          $this->output->set_output(json_encode($st));
+        }
+      } else if ($which == "sample") {
+        $sids = $this->input->post("sample_ids");
+        // $this->output->set_output("<pre>".print_r($sids,TRUE)."</pre>");
+        if (!is_null($sids) && is_array($sids)) {
+          $this->db->select(
+            "CONCAT(s.sample_prefix,s.sample_number) as `sample_number`,
+            st.station_name as `station_name`,
+            st.island as `island`,
+            st.country as `country`,
+            st.depth_min as `depth_min`,
+            st.depth_max as `depth_max`,
+            st.lat as `lat`,
+            st.lon as `lon`,
+            g.grouping_name as `grouping`"#,
+            #st.station_id as `hidden`"
+          );
+          $this->db->from("sample s");
+          $this->db->join("station st","st.station_id = s.station_id","inner");
+          $this->db->join("grouping g","g.grouping_id = st.grouping","inner");
+          $this->db->where_in("CONCAT(s.sample_prefix,s.sample_number)",$sids);
+          $this->db->order_by("`sample_number`","ASC");
+          // $sql = $this->db->get_compiled_select();
+          // $this->output->set_output($sql);
+          $st = $this->db->get()->result_object();
+          $this->output->set_output(json_encode($st));
+        }
       }
     } else {
       $this->_render_output("export_station_template");
@@ -781,7 +831,6 @@ class Samples extends CI_Controller {
     echo $csv;
   }
 
-
   # Utility functions
   # #################
 
@@ -803,7 +852,6 @@ class Samples extends CI_Controller {
     $countries = $this->db->get()->result_object();
     $this->output->set_output(json_encode($countries));
   }
-
 
   function edna_number($prefix=null)
   {
